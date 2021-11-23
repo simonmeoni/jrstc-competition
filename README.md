@@ -477,8 +477,8 @@ It also specifies everything that shouldn't be managed by experiment configurati
 # specify here default training configuration
 defaults:
   - trainer: default.yaml
-  - model: mnist_model.yaml
-  - datamodule: mnist_datamodule.yaml
+  - model: roberta_model.yaml
+  - datamodule: datamodule.yaml
   - callbacks: default.yaml # set this to null if you don't want to use callbacks
   - logger: null # set logger here or use command line (e.g. `python run.py logger=wandb`)
 
@@ -521,8 +521,8 @@ Experiment configurations allow you to overwrite parameters from main project co
 defaults:
   - override /mode: exp.yaml
   - override /trainer: default.yaml
-  - override /model: mnist_model.yaml
-  - override /datamodule: mnist_datamodule.yaml
+  - override /model: roberta_model.yaml
+  - override /datamodule: datamodule.yaml
   - override /callbacks: default.yaml
   - override /logger: null
 
@@ -615,7 +615,7 @@ logger:
 ### Workflow
 
 1. Write your PyTorch Lightning model (see [mnist_model.py](src/models/mnist_model.py) for example)
-2. Write your PyTorch Lightning datamodule (see [mnist_datamodule.py](src/datamodules/mnist_datamodule.py) for example)
+2. Write your PyTorch Lightning datamodule (see [mnist_datamodule.py](src/datamodules/datamodule.py) for example)
 3. Write your experiment config, containing paths to your model and datamodule
 4. Run training with chosen experiment config: `python run.py experiment=experiment_name`
 

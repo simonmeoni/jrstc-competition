@@ -5,15 +5,15 @@ pytorch-lightning>=1.5.0
 torchmetrics>=0.6.0
 
 # --------- hydra --------- #
-hydra-core==1.1.0
+hydra-core==1.1.1
 hydra-colorlog==1.1.0
-hydra-optuna-sweeper==1.1.0
+hydra-optuna-sweeper==1.1.1
 # hydra-ax-sweeper
 # hydra-ray-launcher
 # hydra-submitit-launcher
 
 # --------- loggers --------- #
-wandb
+wandb~=0.12.6
 # neptune-client
 # mlflow
 # comet-ml
@@ -26,11 +26,16 @@ isort           # import sorting
 flake8          # code analysis
 
 # --------- others --------- #
-python-dotenv   # loading env variables from .env file
-rich            # beautiful text formatting in terminal
-pytest          # tests
-sh              # for running bash commands in some tests
-scikit-learn    # used in some callbacks
-seaborn         # used in some callbacks
+python-dotenv~=0.19.2
+rich~=10.14.0
+pytest~=6.2.5
+sh~=1.14.2
+scikit-learn~=1.0.1
+seaborn~=0.11.2
 jupyterlab      # better jupyter notebooks
 pudb            # debugger
+
+omegaconf~=2.1.1
+matplotlib~=3.5.0
+packaging~=21.3
+transformers>=4.12.5

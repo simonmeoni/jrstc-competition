@@ -5,8 +5,10 @@ from typing import List, Sequence
 import pytorch_lightning as pl
 import rich.syntax
 import rich.tree
+import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.utilities import rank_zero_only
+from torchmetrics import Metric
 
 
 def get_logger(name=__name__) -> logging.Logger:
@@ -61,7 +63,9 @@ def extras(config: DictConfig) -> None:
     # force debugger friendly configuration if <config.trainer.fast_dev_run=True>
     # debuggers don't like GPUs and multiprocessing
     if config.trainer.get("fast_dev_run"):
-        log.info("Forcing debugger friendly configuration! <config.trainer.fast_dev_run=True>")
+        log.info(
+            "Forcing debugger friendly configuration! <config.trainer.fast_dev_run=True>"
+        )
         if config.trainer.get("gpus"):
             config.trainer.gpus = 0
         if config.datamodule.get("pin_memory"):
@@ -169,3 +173,20 @@ def finish(
             import wandb
 
             wandb.finish()
+
+
+class Accuracy(Metric):
+    def __init__(self, dist_sync_on_step=False):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
+
+        self.add_state("correct", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+
+    def update(self, less_toxic: torch.Tensor, more_toxic: torch.Tensor):
+        preds = (less_toxic < more_toxic)
+
+        self.correct += preds.sum()
+        self.total += preds.numel()
+
+    def compute(self):
+        return self.correct.float() / self.total

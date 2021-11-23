@@ -3,12 +3,12 @@ import os
 import pytest
 import torch
 
-from src.datamodules.mnist_datamodule import MNISTDataModule
+from src.datamodules.datamodule import DataModule
 
 
 @pytest.mark.parametrize("batch_size", [32, 128])
 def test_mnist_datamodule(batch_size):
-    datamodule = MNISTDataModule(batch_size=batch_size)
+    datamodule = DataModule(batch_size=batch_size)
     datamodule.prepare_data()
 
     assert not datamodule.data_train and not datamodule.data_val and not datamodule.data_test
