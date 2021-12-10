@@ -1,0 +1,63 @@
+# @package _global_
+
+# to execute this experiment run:
+# python run.py experiment=baseline.yaml
+
+defaults:
+  - override /mode: default.yaml
+  - override /trainer: default.yaml
+  - override /model: roberta_model.yaml
+  - override /datamodule: datamodule.yaml
+  - override /callbacks: wandb.yaml
+  - override /logger: wandb.yaml # set logger here or use command line (e.g. `python run.py logger=wandb`)
+
+  # enable color logging
+  - override /hydra/job_logging: colorlog
+  - override /hydra/hydra_logging: colorlog
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+# name of the run determines folder name in logs
+# it's also accessed by loggers
+current_fold: 0
+name: Fold-${current_fold}
+
+seed: 12345
+
+trainer:
+  max_epochs: 5
+
+model:
+  model: roberta-base
+  lr: 2e-5
+  weight_decay: 1e-6
+
+datamodule:
+  data_dir: ${work_dir}/data/jigsaw-toxic-severity-rating/validation_data.csv
+  train_batch_size: 32
+  val_batch_size: 64
+  test_batch_size: 64
+  k_fold: 10
+  current_fold: ${current_fold}
+  max_length: 128
+  tokenizer: roberta-base
+
+callbacks:
+  rich_progress_bar:
+    _target_: pytorch_lightning.callbacks.RichProgressBar
+
+logger:
+  wandb:
+    project: "jrstc-competition"
+    group: "roberta-base/less_data"
+
+work_dir: ${hydra:runtime.cwd}
+
+# path to folder with data
+data_dir: ${work_dir}/data/
+
+# pretty print config at the start of the run using Rich library
+print_config: True
+
+test_after_training: False

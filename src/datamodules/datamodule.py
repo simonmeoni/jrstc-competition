@@ -14,6 +14,11 @@ class JTSRDataset(Dataset):
         self.df = df
         self.more_toxic = df["more_toxic"].values
         self.less_toxic = df["less_toxic"].values
+        self.less_toxic_target = None
+        self.more_toxic_target = None
+        if "more_toxic_target" in df.columns:
+            self.more_toxic_target = df["more_toxic_target"].values
+            self.less_toxic_target = df["less_toxic_target"].values
 
     def __len__(self):
         return len(self.df)
@@ -22,7 +27,16 @@ class JTSRDataset(Dataset):
         more_toxic = self.more_toxic[index]
         less_toxic = self.less_toxic[index]
         target = 1
-
+        if self.more_toxic_target is not None:
+            more_toxic_target = self.more_toxic_target[index]
+            less_toxic_target = self.less_toxic_target[index]
+            return {
+                "more_toxic": more_toxic,
+                "more_toxic_target": more_toxic_target,
+                "less_toxic": less_toxic,
+                "less_toxic_target": less_toxic_target,
+                "target": torch.tensor(target, dtype=torch.long),
+            }
         return {
             "more_toxic": more_toxic,
             "less_toxic": less_toxic,
@@ -51,14 +65,17 @@ class DataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data/jigsaw-toxic-severity-rating/validation_data.csv",
+        test_data_dir: str = "data/jigsaw-toxic-severity-rating/validation_data.csv",
         train_batch_size: int = 32,
         val_batch_size: int = 64,
+        test_batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
         max_length: int = 128,
         k_fold: int = 5,
         current_fold: int = 0,
-        tokenizer: str = ""
+        tokenizer: str = "",
+        train_data_size=None,
     ):
         super().__init__()
 
@@ -68,12 +85,20 @@ class DataModule(LightningDataModule):
         self.full_dataset: Optional[Dataset] = None
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
+        self.data_test: Optional[Dataset] = None
         self.tokenizer = AutoTokenizer.from_pretrained(self.hparams.tokenizer)
 
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.
         Do not use it to assign state (self.x = y)."""
-        self.full_dataset = JTSRDataset(pd.read_csv(self.hparams.data_dir).dropna())
+        self.full_dataset = (
+            JTSRDataset(pd.read_csv(self.hparams.data_dir).dropna())
+            if self.hparams.train_data_size is None
+            else JTSRDataset(
+                pd.read_csv(self.hparams.data_dir).dropna()[: self.hparams.train_data_size]
+            )
+        )
+        self.data_test = JTSRDataset(pd.read_csv(self.hparams.test_data_dir).dropna())
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
@@ -94,7 +119,7 @@ class DataModule(LightningDataModule):
             batch_size=self.hparams.train_batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
-            collate_fn=self.collate_fn
+            collate_fn=self.collate_fn,
         )
 
     def val_dataloader(self):
@@ -103,7 +128,7 @@ class DataModule(LightningDataModule):
             batch_size=self.hparams.val_batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
-            collate_fn=self.collate_fn
+            collate_fn=self.collate_fn,
         )
 
     def collate_fn(self, batch):
@@ -122,10 +147,28 @@ class DataModule(LightningDataModule):
             padding=True,
             max_length=self.hparams.max_length,
         )
-        return {"less toxic": less_toxic, "more toxic":  more_toxic, "target": collate["target"]}
+        if "less_toxic_target" in collate.keys():
+            return {
+                "more_toxic": more_toxic,
+                "more_toxic_target": collate["more_toxic_target"].float(),
+                "less_toxic": less_toxic,
+                "less_toxic_target": collate["less_toxic_target"].float(),
+                "target": collate["target"],
+            }
+        return {
+            "less_toxic": less_toxic,
+            "more_toxic": more_toxic,
+            "target": collate["target"],
+        }
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         pass
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
-        pass
+        return DataLoader(
+            dataset=self.data_test,
+            batch_size=self.hparams.test_batch_size,
+            num_workers=self.hparams.num_workers,
+            pin_memory=self.hparams.pin_memory,
+            collate_fn=self.collate_fn,
+        )

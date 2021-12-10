@@ -4,7 +4,7 @@ import torch
 from pytorch_lightning import LightningModule
 from torch import nn
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from transformers import AutoModel, AdamW
+from transformers import AdamW, AutoModel
 
 from src.utils.utils import Accuracy
 
@@ -34,6 +34,8 @@ class Model(LightningModule):
         scheduler=None,
         t_max: int = 0,
         eta_min: float = 0,
+        mse_loss: bool = False,
+        marge_ranking_loss: bool = True,
     ):
         super().__init__()
 
@@ -46,7 +48,8 @@ class Model(LightningModule):
         self.accuracy = Accuracy()
 
         # loss function
-        self.criterion = nn.MarginRankingLoss(margin=self.hparams.margin)
+        self.margin_ranking_loss = nn.MarginRankingLoss(margin=self.hparams.margin)
+        self.mse_loss = nn.MSELoss()
 
     def forward(self, ids, mask):
         out = self.model(input_ids=ids, attention_mask=mask, output_hidden_states=False)
@@ -56,13 +59,24 @@ class Model(LightningModule):
 
     def step(self, batch: Any):
         more_toxic_outputs = self.forward(
-            batch["more toxic"]["input_ids"], batch["more toxic"]["attention_mask"]
+            batch["more_toxic"]["input_ids"], batch["more_toxic"]["attention_mask"]
         )
         less_toxic_outputs = self.forward(
-            batch["less toxic"]["input_ids"], batch["less toxic"]["attention_mask"]
+            batch["less_toxic"]["input_ids"], batch["less_toxic"]["attention_mask"]
         )
-        loss = self.criterion(more_toxic_outputs, less_toxic_outputs, batch["target"])
-
+        loss = None
+        if self.hparams.marge_ranking_loss:
+            loss = self.margin_ranking_loss(
+                more_toxic_outputs, less_toxic_outputs, batch["target"]
+            )
+        if self.hparams.mse_loss:
+            less_mse_loss = self.mse_loss(more_toxic_outputs, batch["more_toxic_target"])
+            more_mse_loss = self.mse_loss(less_toxic_outputs, batch["less_toxic_target"])
+            loss = (
+                loss * 0.5 + (less_mse_loss + more_mse_loss) * 0.5
+                if loss is not None
+                else less_mse_loss * 0.5 + more_mse_loss * 0.5
+            )
         return less_toxic_outputs, more_toxic_outputs, loss
 
     def training_step(self, batch: Any, batch_idx: int):
@@ -91,7 +105,14 @@ class Model(LightningModule):
         pass
 
     def test_step(self, batch: Any, batch_idx: int):
-        pass
+        more_toxic_outputs = self.forward(
+            batch["more_toxic"]["input_ids"], batch["more_toxic"]["attention_mask"]
+        )
+        less_toxic_outputs = self.forward(
+            batch["less_toxic"]["input_ids"], batch["less_toxic"]["attention_mask"]
+        )
+        self.accuracy(less_toxic_outputs, more_toxic_outputs)
+        self.log("test/acc", self.accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
     def test_epoch_end(self, outputs: List[Any]):
         pass

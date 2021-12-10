@@ -142,5 +142,9 @@ dmypy.json
 # Lightning-Hydra-Template
 logs/
 wandb/
+data/*
 .env
 .autoenv
+!/data/jigsaw-toxic-severity-rating/*
+!/data/jigsaw-unintended-bias-in-toxicity-classification/*
+.history/*
