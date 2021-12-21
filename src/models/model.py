@@ -36,6 +36,7 @@ class Model(LightningModule):
         eta_min: float = 0,
         mse_loss: bool = False,
         marge_ranking_loss: bool = True,
+        concatenate_heads: bool = False,
     ):
         super().__init__()
 
@@ -44,7 +45,7 @@ class Model(LightningModule):
         self.save_hyperparameters(logger=False)
         self.model = AutoModel.from_pretrained(self.hparams.model)
         self.drop = nn.Dropout(p=0.2)
-        self.fc = nn.Linear(768, self.hparams.num_classes)
+        self.fc = nn.Linear(768 if not concatenate_heads else 768 * 4, self.hparams.num_classes)
         self.accuracy = Accuracy()
 
         # loss function
@@ -52,8 +53,14 @@ class Model(LightningModule):
         self.mse_loss = nn.MSELoss()
 
     def forward(self, ids, mask):
-        out = self.model(input_ids=ids, attention_mask=mask, output_hidden_states=False)
-        out = self.drop(out[1])
+        if not self.hparams.concatenate_heads:
+            out = self.model(input_ids=ids, attention_mask=mask, output_hidden_states=False)[1]
+        else:
+            out = torch.concat(
+                self.model(input_ids=ids, attention_mask=mask, output_hidden_states=True)[2][-4:],
+                dim=2,
+            )[:, 0, :]
+        out = self.drop(out)
         outputs = self.fc(out)
         return outputs
 

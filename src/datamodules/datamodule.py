@@ -65,7 +65,7 @@ class DataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data/jigsaw-toxic-severity-rating/validation_data.csv",
-        test_data_dir: str = "data/jigsaw-toxic-severity-rating/validation_data.csv",
+        test_data_dir: str = None,
         train_batch_size: int = 32,
         val_batch_size: int = 64,
         test_batch_size: int = 64,
@@ -98,7 +98,8 @@ class DataModule(LightningDataModule):
                 pd.read_csv(self.hparams.data_dir).dropna()[: self.hparams.train_data_size]
             )
         )
-        self.data_test = JTSRDataset(pd.read_csv(self.hparams.test_data_dir).dropna())
+        if self.hparams.test_data_dir:
+            self.data_test = JTSRDataset(pd.read_csv(self.hparams.test_data_dir).dropna())
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
