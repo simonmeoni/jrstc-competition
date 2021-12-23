@@ -52,6 +52,7 @@ class Model(LightningModule):
         marge_ranking_loss: bool = True,
         concatenate_heads: bool = False,
         mlp: bool = False,
+        eps: float = 1e-6
     ):
         super().__init__()
 
@@ -181,6 +182,7 @@ class Model(LightningModule):
             params=self.parameters(),
             lr=self.hparams.lr,
             weight_decay=self.hparams.weight_decay,
+            eps=self.hparams.eps
         )
         scheduler = self.fetch_scheduler(optimizer)
         if scheduler is None:

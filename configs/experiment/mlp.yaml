@@ -39,6 +39,7 @@ model:
   eta_min: 1e-6
   concatenate_heads: True
   mlp: True
+  eps: 1e-6
 
 datamodule:
   data_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
