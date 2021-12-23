@@ -9,6 +9,20 @@ from transformers import AdamW, AutoModel
 from src.utils.utils import Accuracy
 
 
+class MLP(nn.Module):
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(hidden_size, 256),
+            nn.LeakyReLU(negative_slope=0.01),
+            nn.Dropout(0.1),
+            nn.Linear(256, 1),
+        )
+
+    def forward(self, x):
+        return self.mlp(x)
+
+
 class Model(LightningModule):
     """
     Example of LightningModule for MNIST classification.
@@ -37,6 +51,7 @@ class Model(LightningModule):
         mse_loss: bool = False,
         marge_ranking_loss: bool = True,
         concatenate_heads: bool = False,
+        mlp: bool = False,
     ):
         super().__init__()
 
@@ -45,7 +60,12 @@ class Model(LightningModule):
         self.save_hyperparameters(logger=False)
         self.model = AutoModel.from_pretrained(self.hparams.model)
         self.drop = nn.Dropout(p=0.2)
-        self.fc = nn.Linear(768 if not concatenate_heads else 768 * 4, self.hparams.num_classes)
+        hidden_size = 768 if not concatenate_heads else 768 * 4
+        self.fc = (
+            nn.Linear(hidden_size, self.hparams.num_classes)
+            if not self.hparams.mlp
+            else MLP(hidden_size)
+        )
         self.accuracy = Accuracy()
 
         # loss function
@@ -54,10 +74,14 @@ class Model(LightningModule):
 
     def forward(self, ids, mask):
         if not self.hparams.concatenate_heads:
-            out = self.model(input_ids=ids, attention_mask=mask, output_hidden_states=False)[1]
+            out = self.model(
+                input_ids=ids, attention_mask=mask, output_hidden_states=False
+            )[1]
         else:
             out = torch.concat(
-                self.model(input_ids=ids, attention_mask=mask, output_hidden_states=True)[2][-4:],
+                self.model(
+                    input_ids=ids, attention_mask=mask, output_hidden_states=True
+                )[2][-4:],
                 dim=2,
             )[:, 0, :]
         out = self.drop(out)
@@ -77,8 +101,12 @@ class Model(LightningModule):
                 more_toxic_outputs, less_toxic_outputs, batch["target"]
             )
         if self.hparams.mse_loss:
-            less_mse_loss = self.mse_loss(more_toxic_outputs, batch["more_toxic_target"])
-            more_mse_loss = self.mse_loss(less_toxic_outputs, batch["less_toxic_target"])
+            less_mse_loss = self.mse_loss(
+                more_toxic_outputs, batch["more_toxic_target"]
+            )
+            more_mse_loss = self.mse_loss(
+                less_toxic_outputs, batch["less_toxic_target"]
+            )
             loss = (
                 loss * 0.5 + (less_mse_loss + more_mse_loss) * 0.5
                 if loss is not None
