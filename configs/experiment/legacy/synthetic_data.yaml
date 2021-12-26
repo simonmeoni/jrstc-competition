@@ -18,7 +18,7 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-# name of the run determines folder name in logs
+# name of the run determines losses name in logs
 # it's also accessed by loggers
 current_fold: 0
 name: Fold-${current_fold}
@@ -30,20 +30,18 @@ trainer:
 
 model:
   model: roberta-base
-  lr: 1e-4
+  lr: 3e-5
   weight_decay: 1e-6
-  margin: 0.5
-  num_classes: 1
-  scheduler: CosineAnnealingLR
-  t_max: 500
-  eta_min: 1e-6
-  concatenate_heads: true
+  mse_loss: True
 
 datamodule:
-  data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
+  data_dir: ${work_dir}/data/jigsaw-unintended-bias-in-toxicity-classification/train.csv
+  test_data_dir: ${work_dir}/data/jigsaw-toxic-severity-rating/validation_data.csv
+  train_data_size: 400000
   train_batch_size: 32
-  val_batch_size: 62
-  k_fold: 5
+  val_batch_size: 64
+  test_batch_size: 64
+  k_fold: 10
   current_fold: ${current_fold}
   max_length: 128
   tokenizer: roberta-base
@@ -55,14 +53,14 @@ callbacks:
 logger:
   wandb:
     project: "jrstc-competition"
-    group: "roberta-base/concatenate_heads"
+    group: "roberta-base/synthetic_data"
 
 work_dir: ${hydra:runtime.cwd}
 
-# path to folder with data
-data_dir: ${work_dir}/data
+# path to losses with data
+data_dir: ${work_dir}/data/
 
 # pretty print config at the start of the run using Rich library
 print_config: True
 
-test_after_training: False
+test_after_training: True

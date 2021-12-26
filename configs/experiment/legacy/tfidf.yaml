@@ -20,7 +20,7 @@ defaults:
 
 # name of the run determines folder name in logs
 # it's also accessed by loggers
-current_fold : 0
+current_fold: 0
 name: Fold-${current_fold}
 
 seed: 12345
@@ -34,18 +34,17 @@ model:
   weight_decay: 1e-6
   margin: 0.5
   num_classes: 1
-  scheduler: CosineAnnealingLR
-  t_max: 500
-  eta_min: 1e-6
+  scheduler: ReduceLROnPlateau
+  architecture: tfidf_mlp
+  loss: margin_loss
+  tfidf_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
 
 datamodule:
-  data_dir: ${work_dir}/data/jigsaw-toxic-severity-rating/validation_data.csv
+  data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
   train_batch_size: 32
   val_batch_size: 62
   k_fold: 5
   current_fold: ${current_fold}
-  max_length: 128
-  tokenizer: roberta-base
 
 callbacks:
   rich_progress_bar:
@@ -54,12 +53,12 @@ callbacks:
 logger:
   wandb:
     project: "jrstc-competition"
-    group: "roberta-base/cosine_lr"
+    group: "roberta-base/concatenate_heads"
 
 work_dir: ${hydra:runtime.cwd}
 
 # path to folder with data
-data_dir: ${work_dir}/data/
+data_dir: ${work_dir}/data
 
 # pretty print config at the start of the run using Rich library
 print_config: True

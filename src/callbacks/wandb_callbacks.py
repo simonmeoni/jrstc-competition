@@ -69,7 +69,7 @@ class UploadCodeAsArtifact(Callback):
         code = wandb.Artifact("project-source", type="code")
 
         if self.use_git:
-            # get .git folder path
+            # get .git losses path
             git_dir_path = Path(
                 subprocess.check_output(["git", "rev-parse", "--git-dir"]).strip().decode("utf8")
             ).resolve()
@@ -81,7 +81,7 @@ class UploadCodeAsArtifact(Callback):
                 command = ["git", "check-ignore", "-q", str(path)]
                 not_ignored = subprocess.run(command).returncode == 1
 
-                # don't upload files from .git folder
+                # don't upload files from .git losses
                 not_git = not str(path).startswith(str(git_dir_path))
 
                 if path.is_file() and not_git and not_ignored:

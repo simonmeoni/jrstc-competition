@@ -233,12 +233,12 @@ python run.py logger=wandb
 <summary><b>Use different running modes</b></summary>
 
 ```yaml
-# debug mode changes logging folder to `logs/debug/`
+# debug mode changes logging losses to `logs/debug/`
 # also enables default trainer debugging options from `configs/trainer/debug.yaml`
 # also sets level of all command line loggers to 'DEBUG'
 python run.py mode=debug
 
-# experiment mode changes logging folder to `logs/experiments/name_of_your_experiment/`
+# experiment mode changes logging losses to `logs/experiments/name_of_your_experiment/`
 # name is also used by loggers
 python run.py mode=exp name='my_new_experiment_253'
 ```
@@ -297,7 +297,7 @@ python run.py +trainer.max_time="00:12:00:00"
 
 ```yaml
 # run in debug mode
-# changes logging folder to `logs/debug/...`
+# changes logging losses to `logs/debug/...`
 # enables trainer debugging options specified in `configs/trainer/debug.yaml`
 # sets level of all command line loggers to 'DEBUG'
 python run.py mode=debug
@@ -493,7 +493,7 @@ defaults:
 # https://hydra.cc/docs/next/tutorials/basic/running_your_app/working_directory
 work_dir: ${hydra:runtime.cwd}
 
-# path to folder with data
+# path to losses with data
 data_dir: ${work_dir}/data/
 
 # pretty print config at the start of the run using Rich library
@@ -529,7 +529,7 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-# name of the run determines folder name in logs and is accessed by loggers
+# name of the run determines losses name in logs and is accessed by loggers
 name: "example_simple"
 
 seed: 12345
@@ -890,7 +890,7 @@ To reproduce previous experiment, simply load its config from logs:
 python run.py --config-path /logs/runs/.../.hydra/ --config-name config.yaml
 ```
 
-The `config.yaml` from `.hydra` folder contains all overriden parameters and sections.
+The `config.yaml` from `.hydra` losses contains all overriden parameters and sections.
 <br><br><br>
 -->
 
@@ -1248,7 +1248,7 @@ from setuptools import find_packages, setup
 
 
 setup(
-    name="src",  # change "src" folder name to your project name
+    name="src",  # change "src" losses name to your project name
     version="0.0.0",
     description="Describe Your Cool Project",
     author="...",

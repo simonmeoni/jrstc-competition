@@ -86,7 +86,6 @@ class DataModule(LightningDataModule):
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
         self.data_test: Optional[Dataset] = None
-        self.tokenizer = AutoTokenizer.from_pretrained(self.hparams.tokenizer)
 
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.
@@ -132,33 +131,20 @@ class DataModule(LightningDataModule):
             collate_fn=self.collate_fn,
         )
 
-    def collate_fn(self, batch):
+    @staticmethod
+    def collate_fn(batch):
         collate = torch.utils.data.dataloader.default_collate(batch)
-        less_toxic = self.tokenizer(
-            collate["less_toxic"],
-            truncation=True,
-            return_tensors="pt",
-            padding=True,
-            max_length=self.hparams.max_length,
-        )
-        more_toxic = self.tokenizer(
-            collate["more_toxic"],
-            truncation=True,
-            return_tensors="pt",
-            padding=True,
-            max_length=self.hparams.max_length,
-        )
         if "less_toxic_target" in collate.keys():
             return {
-                "more_toxic": more_toxic,
+                "more_toxic": collate["more_toxic"],
                 "more_toxic_target": collate["more_toxic_target"].float(),
-                "less_toxic": less_toxic,
+                "less_toxic": collate["less_toxic"],
                 "less_toxic_target": collate["less_toxic_target"].float(),
                 "target": collate["target"],
             }
         return {
-            "less_toxic": less_toxic,
-            "more_toxic": more_toxic,
+            "less_toxic": collate["less_toxic"],
+            "more_toxic": collate["more_toxic"],
             "target": collate["target"],
         }
 

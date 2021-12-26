@@ -18,7 +18,7 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-# name of the run determines folder name in logs
+# name of the run determines losses name in logs
 # it's also accessed by loggers
 current_fold: 0
 name: Fold-${current_fold}
@@ -26,19 +26,27 @@ name: Fold-${current_fold}
 seed: 12345
 
 trainer:
-  max_epochs: 5
+  max_epochs: 3
 
 model:
   model: roberta-base
-  lr: 2e-5
+  lr: 1e-4
   weight_decay: 1e-6
+  margin: 0.5
+  num_classes: 1
+  scheduler: CosineAnnealingLR
+  t_max: 500
+  eta_min: 1e-6
+  concatenate_heads: True
+  mlp: True
+  eps: 1e-6
 
 datamodule:
-  data_dir: ${work_dir}/data/jigsaw-toxic-severity-rating/validation_data.csv
+  data_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
+  test_data_dir: ${work_dir}/data/jigsaw-toxic-severity-rating/validation_data.csv
   train_batch_size: 32
-  val_batch_size: 64
-  test_batch_size: 64
-  k_fold: 10
+  val_batch_size: 62
+  k_fold: 5
   current_fold: ${current_fold}
   max_length: 128
   tokenizer: roberta-base
@@ -50,14 +58,14 @@ callbacks:
 logger:
   wandb:
     project: "jrstc-competition"
-    group: "roberta-base/less_data"
+    group: "roberta-base/mlp"
 
 work_dir: ${hydra:runtime.cwd}
 
-# path to folder with data
-data_dir: ${work_dir}/data/
+# path to losses with data
+data_dir: ${work_dir}/data
 
 # pretty print config at the start of the run using Rich library
 print_config: True
 
-test_after_training: False
+test_after_training: True

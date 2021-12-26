@@ -20,29 +20,35 @@ defaults:
 
 # name of the run determines folder name in logs
 # it's also accessed by loggers
-current_fold : 0
-name: Fold-${current_fold}
-
+current_fold: 0
 seed: 12345
+transformer_model: ""
+architecture_model: ""
 
 trainer:
-  max_epochs: 3
+  max_epochs: 6
 
 model:
-  model: roberta-base
-  lr: 2e-5
+  lr: 1e-4
   weight_decay: 1e-6
   margin: 0.5
   num_classes: 1
+  scheduler: ReduceLROnPlateau
+  architecture: ${architecture_model}
+  model: ${transformer_model}
+  tokenizer: ${transformer_model}
+  loss: margin_loss
+  tfidf_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
+  remove_dropout: false
+
 
 datamodule:
-  data_dir: ${work_dir}/data/jigsaw-toxic-severity-rating/validation_data.csv
+  data_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
+  test_data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
   train_batch_size: 32
   val_batch_size: 62
   k_fold: 5
   current_fold: ${current_fold}
-  max_length: 128
-  tokenizer: roberta-base
 
 callbacks:
   rich_progress_bar:
@@ -51,14 +57,14 @@ callbacks:
 logger:
   wandb:
     project: "jrstc-competition"
-    group: "roberta-base/more-batch"
+    group: ${architecture_model}-${transformer_model}
 
 work_dir: ${hydra:runtime.cwd}
 
 # path to folder with data
-data_dir: ${work_dir}/data/
+data_dir: ${work_dir}/data
 
 # pretty print config at the start of the run using Rich library
 print_config: True
 
-test_after_training: False
+test_after_training: True

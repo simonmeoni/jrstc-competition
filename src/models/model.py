@@ -1,26 +1,19 @@
 from typing import Any, List
 
-import torch
 from pytorch_lightning import LightningModule
-from torch import nn
-from torch.optim.lr_scheduler import CosineAnnealingLR
-from transformers import AdamW, AutoModel
+from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
+from transformers import AdamW
 
+from src.models.architectures.concat_mlp import ConcatMLP
+from src.models.architectures.concat_regression import ConcatRegression
+from src.models.architectures.simple_mlp import SimpleMLP
+from src.models.architectures.simple_regression import SimpleRegression
+from src.models.architectures.tfidf_mlp import TFIDFMLP
+from src.models.architectures.tfidf_regression import TFIDFRegression
+from src.models.architectures.tfidf_transformer import TFIDFTransformer
+from src.models.losses.aux_loss import AuxLoss
+from src.models.losses.margin_loss import MarginLoss
 from src.utils.utils import Accuracy
-
-
-class MLP(nn.Module):
-    def __init__(self, hidden_size):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(hidden_size, 256),
-            nn.LeakyReLU(negative_slope=0.01),
-            nn.Dropout(0.1),
-            nn.Linear(256, 1),
-        )
-
-    def forward(self, x):
-        return self.mlp(x)
 
 
 class Model(LightningModule):
@@ -43,76 +36,115 @@ class Model(LightningModule):
         lr: float = 0.001,
         weight_decay: float = 0.0005,
         model: str = "",
+        architecture: str = "simple_regression",
+        hidden_size: int = 768,
         margin: float = 0.5,
         num_classes: int = 1,
         scheduler=None,
-        t_max: int = 0,
+        t_max: int = 700,
         eta_min: float = 0,
-        mse_loss: bool = False,
-        marge_ranking_loss: bool = True,
-        concatenate_heads: bool = False,
-        mlp: bool = False,
-        eps: float = 1e-6
+        loss: str = "margin_loss",
+        eps: float = 1e-8,
+        patience: int = 1,
+        tokenizer: str = "",
+        max_length: int = 128,
+        tfidf_dir: str = "",
+        remove_dropout: bool = False,
     ):
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
         # it also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
-        self.model = AutoModel.from_pretrained(self.hparams.model)
-        self.drop = nn.Dropout(p=0.2)
-        hidden_size = 768 if not concatenate_heads else 768 * 4
-        self.fc = (
-            nn.Linear(hidden_size, self.hparams.num_classes)
-            if not self.hparams.mlp
-            else MLP(hidden_size)
-        )
+        if self.hparams.architecture == "simple_regression":
+            self.model = SimpleRegression(
+                model=self.hparams.model,
+                hidden_size=self.hparams.hidden_size,
+                num_classes=self.hparams.num_classes,
+                tokenizer=self.hparams.tokenizer,
+                max_length=self.hparams.max_length,
+                remove_dropout=self.hparams.remove_dropout,
+            )
+        elif self.hparams.architecture == "concat_regression":
+            self.model = ConcatRegression(
+                model=self.hparams.model,
+                hidden_size=self.hparams.hidden_size,
+                num_classes=self.hparams.num_classes,
+                tokenizer=self.hparams.tokenizer,
+                max_length=self.hparams.max_length,
+                remove_dropout=self.hparams.remove_dropout,
+            )
+        elif self.hparams.architecture == "simple_mlp":
+            self.model = SimpleMLP(
+                model=self.hparams.model,
+                hidden_size=self.hparams.hidden_size,
+                num_classes=self.hparams.num_classes,
+                tokenizer=self.hparams.tokenizer,
+                max_length=self.hparams.max_length,
+                remove_dropout=self.hparams.remove_dropout,
+            )
+        elif self.hparams.architecture == "concat_mlp":
+            self.model = ConcatMLP(
+                model=self.hparams.model,
+                hidden_size=self.hparams.hidden_size,
+                num_classes=self.hparams.num_classes,
+                tokenizer=self.hparams.tokenizer,
+                max_length=self.hparams.max_length,
+                remove_dropout=self.hparams.remove_dropout,
+            )
+        elif self.hparams.architecture == "tfidf_regression":
+            print("compute TF-IDF vector ...")
+            self.model = TFIDFRegression(
+                num_classes=self.hparams.num_classes,
+                tf_idf_data=self.hparams.tfidf_dir,
+            )
+        elif self.hparams.architecture == "tfidf_mlp":
+            print("compute TF-IDF vector ...")
+            self.model = TFIDFMLP(
+                num_classes=self.hparams.num_classes,
+                tf_idf_data=self.hparams.tfidf_dir,
+            )
+            print("computing TF-IDF vector finished !")
+        elif self.hparams.architecture == "tfidf_transformer":
+            print("compute TF-IDF vector ...")
+            self.model = TFIDFTransformer(
+                num_classes=self.hparams.num_classes,
+                tf_idf_data=self.hparams.tfidf_dir,
+                model=self.hparams.model,
+                hidden_size=self.hparams.hidden_size,
+                tokenizer=self.hparams.tokenizer,
+                max_length=self.hparams.max_length,
+                remove_dropout=self.hparams.remove_dropout,
+            )
+            print("computing TF-IDF vector finished !")
         self.accuracy = Accuracy()
 
         # loss function
-        self.margin_ranking_loss = nn.MarginRankingLoss(margin=self.hparams.margin)
-        self.mse_loss = nn.MSELoss()
+        if self.hparams.loss == "margin_loss":
+            self.criterion = MarginLoss(margin=self.hparams.margin)
+        elif self.hparams.loss == "aux_loss":
+            self.criterion = AuxLoss(margin=self.hparams.margin)
 
-    def forward(self, ids, mask):
-        if not self.hparams.concatenate_heads:
-            out = self.model(
-                input_ids=ids, attention_mask=mask, output_hidden_states=False
-            )[1]
-        else:
-            out = torch.concat(
-                self.model(
-                    input_ids=ids, attention_mask=mask, output_hidden_states=True
-                )[2][-4:],
-                dim=2,
-            )[:, 0, :]
-        out = self.drop(out)
-        outputs = self.fc(out)
-        return outputs
+    def forward(self, text):
+        return self.model(text, self.device)
 
     def step(self, batch: Any):
-        more_toxic_outputs = self.forward(
-            batch["more_toxic"]["input_ids"], batch["more_toxic"]["attention_mask"]
+        more_toxic_outputs = self.forward(batch["more_toxic"])
+        less_toxic_outputs = self.forward(batch["less_toxic"])
+        less_toxic_target = (
+            batch["less_toxic_target"] if "less_toxic_target" in batch.keys() else None
         )
-        less_toxic_outputs = self.forward(
-            batch["less_toxic"]["input_ids"], batch["less_toxic"]["attention_mask"]
+        more_toxic_target = (
+            batch["more_toxic_target"] if "more_toxic_target" in batch.keys() else None
         )
-        loss = None
-        if self.hparams.marge_ranking_loss:
-            loss = self.margin_ranking_loss(
-                more_toxic_outputs, less_toxic_outputs, batch["target"]
-            )
-        if self.hparams.mse_loss:
-            less_mse_loss = self.mse_loss(
-                more_toxic_outputs, batch["more_toxic_target"]
-            )
-            more_mse_loss = self.mse_loss(
-                less_toxic_outputs, batch["less_toxic_target"]
-            )
-            loss = (
-                loss * 0.5 + (less_mse_loss + more_mse_loss) * 0.5
-                if loss is not None
-                else less_mse_loss * 0.5 + more_mse_loss * 0.5
-            )
+        loss = self.criterion(
+            less_toxic_outputs,
+            more_toxic_outputs,
+            less_toxic_target,
+            more_toxic_target,
+            batch["target"],
+        )
+
         return less_toxic_outputs, more_toxic_outputs, loss
 
     def training_step(self, batch: Any, batch_idx: int):
@@ -141,12 +173,8 @@ class Model(LightningModule):
         pass
 
     def test_step(self, batch: Any, batch_idx: int):
-        more_toxic_outputs = self.forward(
-            batch["more_toxic"]["input_ids"], batch["more_toxic"]["attention_mask"]
-        )
-        less_toxic_outputs = self.forward(
-            batch["less_toxic"]["input_ids"], batch["less_toxic"]["attention_mask"]
-        )
+        more_toxic_outputs = self.forward(batch["more_toxic"])
+        less_toxic_outputs = self.forward(batch["less_toxic"])
         self.accuracy(less_toxic_outputs, more_toxic_outputs)
         self.log("test/acc", self.accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
@@ -168,8 +196,14 @@ class Model(LightningModule):
                 "interval": "step",
                 "frequency": 1,
             }
-        else:
-            return None
+        elif self.hparams.scheduler == "ReduceLROnPlateau":
+            return {
+                "scheduler": ReduceLROnPlateau(optimizer, patience=self.hparams.patience),
+                "monitor": "val/loss",
+                "interval": "epoch",
+                "frequency": 1,
+            }
+        return None
 
     def configure_optimizers(self):
         """Choose what optimizers and learning-rate schedulers to use in your optimization.
@@ -182,7 +216,7 @@ class Model(LightningModule):
             params=self.parameters(),
             lr=self.hparams.lr,
             weight_decay=self.hparams.weight_decay,
-            eps=self.hparams.eps
+            eps=self.hparams.eps,
         )
         scheduler = self.fetch_scheduler(optimizer)
         if scheduler is None:

@@ -9,6 +9,7 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.utilities import rank_zero_only
 from torchmetrics import Metric
+from transformers import AutoConfig, AutoModel
 
 
 def get_logger(name=__name__) -> logging.Logger:
@@ -183,10 +184,20 @@ class Accuracy(Metric):
         self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
 
     def update(self, less_toxic: torch.Tensor, more_toxic: torch.Tensor):
-        preds = (less_toxic < more_toxic)
+        preds = less_toxic < more_toxic
 
         self.correct += preds.sum()
         self.total += preds.numel()
 
     def compute(self):
         return self.correct.float() / self.total
+
+
+def rm_dropout(model, remove_dropout):
+    if remove_dropout:
+        cfg = AutoConfig.from_pretrained(model)
+        cfg.hidden_dropout_prob = 0
+        cfg.attention_probs_dropout_prob = 0
+        return AutoModel.from_pretrained(model, config=cfg)
+    else:
+        return AutoModel.from_pretrained(model)
