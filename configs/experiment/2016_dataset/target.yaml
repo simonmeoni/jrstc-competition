@@ -22,31 +22,28 @@ defaults:
 # it's also accessed by loggers
 current_fold: 0
 seed: 12345
-transformer_model: ""
-architecture_model: ""
+transformer_model: "unitary/unbiased-toxic-roberta"
+architecture_model: "concat_regression"
 
 trainer:
-  max_epochs: 6
+  max_epochs: 4
 
 model:
-  lr: 1e-4
+  lr: 2e-5
   weight_decay: 1e-6
-  margin: 0.5
-  num_classes: 1
   scheduler: ReduceLROnPlateau
   architecture: ${architecture_model}
   model: ${transformer_model}
   tokenizer: ${transformer_model}
-  loss: margin_loss
+  loss: mse_loss
   tfidf_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
-  remove_dropout: false
-
+  remove_dropout: true
 
 datamodule:
-  data_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
+  data_dir: ${data_dir}/jigsaw-toxic-comment-classification-target/train.csv
   test_data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
-  train_batch_size: 32
-  val_batch_size: 62
+  train_batch_size: 24
+  val_batch_size: 64
   k_fold: 5
   current_fold: ${current_fold}
 
@@ -57,7 +54,7 @@ callbacks:
 logger:
   wandb:
     project: "jrstc-competition"
-    group: ${architecture_model}-${transformer_model}
+    group: ${architecture_model}-${transformer_model}/${experiment_group}
 
 work_dir: ${hydra:runtime.cwd}
 

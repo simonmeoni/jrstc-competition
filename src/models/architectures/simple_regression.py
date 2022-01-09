@@ -1,13 +1,16 @@
 from torch import nn
 from transformers import AutoTokenizer
 
-from src.utils.utils import rm_dropout
+from src.utils.utils import freeze_layer, rm_dropout
 
 
 class SimpleRegression(nn.Module):
-    def __init__(self, model, hidden_size, num_classes, tokenizer, max_length, remove_dropout):
+    def __init__(
+        self, model, hidden_size, num_classes, tokenizer, max_length, remove_dropout, freeze
+    ):
         super().__init__()
         self.model = rm_dropout(model, remove_dropout)
+        self.model = freeze_layer(model, freeze)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         self.drop = nn.Dropout(p=0.2)
         self.max_length = max_length

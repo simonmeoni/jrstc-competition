@@ -6,7 +6,6 @@ from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS
 from sklearn.model_selection import KFold
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, Subset
-from transformers import AutoTokenizer
 
 
 class JTSRDataset(Dataset):
@@ -65,7 +64,7 @@ class DataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data/jigsaw-toxic-severity-rating/validation_data.csv",
-        test_data_dir: str = None,
+        val_data_dir: str = None,
         train_batch_size: int = 32,
         val_batch_size: int = 64,
         test_batch_size: int = 64,
@@ -85,7 +84,6 @@ class DataModule(LightningDataModule):
         self.full_dataset: Optional[Dataset] = None
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
-        self.data_test: Optional[Dataset] = None
 
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.
@@ -97,8 +95,6 @@ class DataModule(LightningDataModule):
                 pd.read_csv(self.hparams.data_dir).dropna()[: self.hparams.train_data_size]
             )
         )
-        if self.hparams.test_data_dir:
-            self.data_test = JTSRDataset(pd.read_csv(self.hparams.test_data_dir).dropna())
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
@@ -147,15 +143,3 @@ class DataModule(LightningDataModule):
             "more_toxic": collate["more_toxic"],
             "target": collate["target"],
         }
-
-    def predict_dataloader(self) -> EVAL_DATALOADERS:
-        pass
-
-    def test_dataloader(self) -> EVAL_DATALOADERS:
-        return DataLoader(
-            dataset=self.data_test,
-            batch_size=self.hparams.test_batch_size,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
-            collate_fn=self.collate_fn,
-        )

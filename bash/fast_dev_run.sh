@@ -1,0 +1,1 @@
+python run.py experiment="$1" ++datamodule.train_batch_size=2 ++trainer.fast_dev_run=true callbacks=none

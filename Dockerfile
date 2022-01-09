@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir kaggle
 RUN mkdir "jrstc-competition"
 COPY . .
 RUN cd jrstc-competition
-RUN bash/dataset.sh
+RUN bash/get_dataset.sh

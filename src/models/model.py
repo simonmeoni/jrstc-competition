@@ -1,19 +1,34 @@
 from typing import Any, List
 
 from pytorch_lightning import LightningModule
+from torch import nn
 from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
 from transformers import AdamW
 
+from bin.tfidf_mlp import TFIDFMLP
+from bin.tfidf_regression import TFIDFRegression
+from bin.tfidf_transformer import TFIDFTransformer
 from src.models.architectures.concat_mlp import ConcatMLP
 from src.models.architectures.concat_regression import ConcatRegression
 from src.models.architectures.simple_mlp import SimpleMLP
 from src.models.architectures.simple_regression import SimpleRegression
-from src.models.architectures.tfidf_mlp import TFIDFMLP
-from src.models.architectures.tfidf_regression import TFIDFRegression
-from src.models.architectures.tfidf_transformer import TFIDFTransformer
 from src.models.losses.aux_loss import AuxLoss
 from src.models.losses.margin_loss import MarginLoss
-from src.utils.utils import Accuracy
+from src.utils.utils import Accuracy, layerwise_learning_rate_decay
+
+
+class MLP(nn.Module):
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(hidden_size, 256),
+            nn.LeakyReLU(negative_slope=0.01),
+            nn.Dropout(0.1),
+            nn.Linear(256, 1),
+        )
+
+    def forward(self, x):
+        return self.mlp(x)
 
 
 class Model(LightningModule):
@@ -32,24 +47,26 @@ class Model(LightningModule):
     """
 
     def __init__(
-        self,
-        lr: float = 0.001,
-        weight_decay: float = 0.0005,
-        model: str = "",
-        architecture: str = "simple_regression",
-        hidden_size: int = 768,
-        margin: float = 0.5,
-        num_classes: int = 1,
-        scheduler=None,
-        t_max: int = 700,
-        eta_min: float = 0,
-        loss: str = "margin_loss",
-        eps: float = 1e-8,
-        patience: int = 1,
-        tokenizer: str = "",
-        max_length: int = 128,
-        tfidf_dir: str = "",
-        remove_dropout: bool = False,
+            self,
+            lr: float = 0.001,
+            weight_decay: float = 0.0005,
+            model: str = "",
+            architecture: str = "simple_regression",
+            hidden_size: int = 768,
+            margin: float = 0.5,
+            num_classes: int = 1,
+            scheduler=None,
+            t_max: int = 700,
+            eta_min: float = 0,
+            loss: str = "margin_loss",
+            eps: float = 1e-8,
+            patience: int = 1,
+            tokenizer: str = "",
+            max_length: int = 128,
+            tfidf_dir: str = "",
+            remove_dropout: bool = False,
+            freeze: bool = False,
+            llrd: bool = False
     ):
         super().__init__()
 
@@ -64,6 +81,7 @@ class Model(LightningModule):
                 tokenizer=self.hparams.tokenizer,
                 max_length=self.hparams.max_length,
                 remove_dropout=self.hparams.remove_dropout,
+                freeze=self.hparams.freeze,
             )
         elif self.hparams.architecture == "concat_regression":
             self.model = ConcatRegression(
@@ -73,6 +91,7 @@ class Model(LightningModule):
                 tokenizer=self.hparams.tokenizer,
                 max_length=self.hparams.max_length,
                 remove_dropout=self.hparams.remove_dropout,
+                freeze=self.hparams.freeze,
             )
         elif self.hparams.architecture == "simple_mlp":
             self.model = SimpleMLP(
@@ -212,8 +231,13 @@ class Model(LightningModule):
         See examples here:
             https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
         """
+        params = layerwise_learning_rate_decay(model=self.model,
+                                               learning_rate=self.hparams.lr,
+                                               weight_decay=self.hparams.weight_decay,
+                                               layerwise_learning_rate_factor=0.7,
+                                               layerwise_learning_rate_flag=self.hparams.llrd)
         optimizer = AdamW(
-            params=self.parameters(),
+            params=params,
             lr=self.hparams.lr,
             weight_decay=self.hparams.weight_decay,
             eps=self.hparams.eps,

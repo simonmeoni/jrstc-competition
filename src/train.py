@@ -84,6 +84,11 @@ def train(config: DictConfig) -> Optional[float]:
         log.info("Starting testing!")
         trainer.test(model=model, datamodule=datamodule, ckpt_path="best")
 
+    # Test the model
+    if config.get("test_after_training") and config.trainer.get("fast_dev_run"):
+        log.info("Starting testing!")
+        trainer.test(model=model, datamodule=datamodule)
+
     # Make sure everything closed properly
     log.info("Finalizing!")
     utils.finish(

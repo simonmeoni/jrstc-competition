@@ -1,23 +1,16 @@
-import copy
-import gc
 import os
-import random
-import time
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
-from sklearn.feature_extraction.text import TfidfVectorizer
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoTokenizer
 
 from bin.concat_mlp import ConcatMLP
 from bin.concat_regression import ConcatRegression
 from bin.set_seed import set_seed
 from bin.simple_regression import SimpleRegression
-from bin.stacking_inference import inference, submission_loop
+from bin.stacking_inference import inference
 from bin.tfidf_mlp import TFIDFMLP
 from bin.tfidf_regression import TFIDFRegression
 from bin.tfidf_transformer import TFIDFTransformer

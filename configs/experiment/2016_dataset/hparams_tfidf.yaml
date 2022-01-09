@@ -1,0 +1,64 @@
+# @package _global_
+
+# to execute this experiment run:
+# python run.py experiment=baseline.yaml
+
+defaults:
+  - override /mode: default.yaml
+  - override /trainer: default.yaml
+  - override /model: roberta_model.yaml
+  - override /datamodule: datamodule.yaml
+  - override /callbacks: wandb.yaml
+  - override /logger: wandb.yaml # set logger here or use command line (e.g. `python run.py logger=wandb`)
+
+  # enable color logging
+  - override /hydra/job_logging: colorlog
+  - override /hydra/hydra_logging: colorlog
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+# name of the run determines folder name in logs
+# it's also accessed by loggers
+current_fold: 0
+seed: 12345
+
+trainer:
+  max_epochs: 10
+
+model:
+  lr: 1e-4
+  weight_decay: 1e-6
+  margin: 0.5
+  num_classes: 1
+  scheduler: ReduceLROnPlateau
+  architecture: tfidf_mlp
+  loss: margin_loss
+  tfidf_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
+
+datamodule:
+  data_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
+  test_data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
+  train_batch_size: 32
+  val_batch_size: 62
+  k_fold: 5
+  current_fold: ${current_fold}
+
+callbacks:
+  rich_progress_bar:
+    _target_: pytorch_lightning.callbacks.RichProgressBar
+
+logger:
+  wandb:
+    project: "jrstc-competition"
+    group: ${model.architecture}/h_params
+
+work_dir: ${hydra:runtime.cwd}
+
+# path to folder with data
+data_dir: ${work_dir}/data
+
+# pretty print config at the start of the run using Rich library
+print_config: True
+
+test_after_training: True

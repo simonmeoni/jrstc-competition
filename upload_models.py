@@ -7,7 +7,7 @@ from bin.upload_to_kaggle import kaggle_get_metadata, kaggle_new_dataset_version
 
 kaggle_dataset = "pretrainedmodels"
 folder = "./models/"
-pt_path = "./models/pt"
+pt_path = "bin/cli/models/pt"
 if os.path.exists(pt_path):
     shutil.rmtree(pt_path, ignore_errors=False)
 os.makedirs(pt_path)

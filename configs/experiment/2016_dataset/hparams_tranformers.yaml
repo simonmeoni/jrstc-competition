@@ -41,7 +41,6 @@ model:
   tfidf_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
   remove_dropout: false
 
-
 datamodule:
   data_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
   test_data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv

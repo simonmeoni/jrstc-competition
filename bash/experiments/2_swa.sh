@@ -1,0 +1,1 @@
+python run.py -m experiment=2_swa ++trainer.gpus=1 current_fold=0,1,2,3,4 experiment_group=swa

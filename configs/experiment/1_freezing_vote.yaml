@@ -20,28 +20,33 @@ defaults:
 
 # name of the run determines folder name in logs
 # it's also accessed by loggers
+name: Fold-${current_fold}
 current_fold: 0
 seed: 12345
+transformer_model: "unitary/unbiased-toxic-roberta"
+architecture_model: "concat_regression"
+experiment_group: "freeze"
 
 trainer:
   max_epochs: 10
 
 model:
-  lr: 1e-4
+  lr: 5e-5
   weight_decay: 1e-6
-  margin: 0.5
-  num_classes: 1
   scheduler: ReduceLROnPlateau
-  architecture: tfidf_mlp
+  architecture: ${architecture_model}
+  model: ${transformer_model}
+  tokenizer: ${transformer_model}
   loss: margin_loss
   tfidf_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
-
+  remove_dropout: true
+  freeze: true
+  llrd: false
 
 datamodule:
-  data_dir: ${data_dir}/jigsawy-toxic-comment-classification/train.csv
-  test_data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
-  train_batch_size: 32
-  val_batch_size: 62
+  data_dir: ${data_dir}/jigsaw-classification-voting-cleaning/validation_data.csv
+  train_batch_size: 24
+  val_batch_size: 64
   k_fold: 5
   current_fold: ${current_fold}
 
@@ -52,7 +57,7 @@ callbacks:
 logger:
   wandb:
     project: "jrstc-competition"
-    group: ${model.architecture}/h_params
+    group: ${architecture_model}/${transformer_model}/${experiment_group}
 
 work_dir: ${hydra:runtime.cwd}
 
@@ -61,5 +66,4 @@ data_dir: ${work_dir}/data
 
 # pretty print config at the start of the run using Rich library
 print_config: True
-
-test_after_training: True
+test_after_training: False
