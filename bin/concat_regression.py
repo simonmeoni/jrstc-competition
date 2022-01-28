@@ -6,7 +6,15 @@ from src.utils.utils import rm_dropout
 
 
 class ConcatRegression(nn.Module):
-    def __init__(self, model, hidden_size, num_classes, tokenizer, max_length, remove_dropout):
+    def __init__(
+        self,
+        model,
+        hidden_size,
+        num_classes,
+        tokenizer,
+        max_length,
+        remove_dropout=False,
+    ):
         super().__init__()
         self.model = rm_dropout(model, remove_dropout)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
