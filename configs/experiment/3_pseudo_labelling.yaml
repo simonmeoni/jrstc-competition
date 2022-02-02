@@ -27,7 +27,7 @@ architecture_model: "concat_regression"
 experiment_group: "pseudo-labelling"
 
 trainer:
-  max_epochs: 10
+  max_epochs: 6
 
 model:
   lr: 5e-5

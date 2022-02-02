@@ -21,6 +21,8 @@ def download_huggingface_models(path, model_name):
     tokenizer.save_pretrained(path + "/" + model_path)
 
 
+download_huggingface_models(pt_path, "roberta-base")
+download_huggingface_models(pt_path, "microsoft/deberta-v3-base")
 download_huggingface_models(pt_path, "unitary/unbiased-toxic-roberta")
 download_huggingface_models(pt_path, "vinai/bertweet-base")
 download_huggingface_models(pt_path, "unitary/toxic-bert")

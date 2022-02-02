@@ -11,11 +11,11 @@ get_dataset:
 create_synthetic_dataset:
 	bash/get_dataset.sh
 test:
-	bash/fast_dev_run.sh $(experiments)
+	bash/fast_dev_run.sh $(experiment)
 upload:
 	bash/upload_monster_ensemble.sh
 experiment:
-	nohup bash/experiments/$(experiments).sh &
+	 nohup python run.py -m experiment=$(experiment) ++trainer.gpus=1 &
 upload-checkpoints:
 	python upload_checkpoints.py \
         --wandb_project simonmeoni/jrstc-competition \
