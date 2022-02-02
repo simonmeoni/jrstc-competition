@@ -62,19 +62,19 @@ class DataModule(LightningDataModule):
     """
 
     def __init__(
-            self,
-            data_dir: str = "data/jigsaw-toxic-severity-rating/validation_data.csv",
-            val_data_dir: str = None,
-            train_batch_size: int = 32,
-            val_batch_size: int = 64,
-            test_batch_size: int = 64,
-            num_workers: int = 0,
-            pin_memory: bool = False,
-            max_length: int = 128,
-            k_fold: int = 5,
-            current_fold: int = 0,
-            tokenizer: str = "",
-            train_data_size=None,
+        self,
+        data_dir: str = "data/jigsaw-toxic-severity-rating/validation_data.csv",
+        val_data_dir: str = None,
+        train_batch_size: int = 32,
+        val_batch_size: int = 64,
+        test_batch_size: int = 64,
+        num_workers: int = 0,
+        pin_memory: bool = False,
+        max_length: int = 128,
+        k_fold: int = 5,
+        current_fold: int = 0,
+        tokenizer: str = "",
+        train_data_size=None,
     ):
         super().__init__()
 
@@ -88,16 +88,15 @@ class DataModule(LightningDataModule):
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.
         Do not use it to assign state (self.x = y)."""
-        if self.hparams.val_data_dir is not None:
-            pass
-        else:
-            self.full_dataset = (
-                JTSRDataset(pd.read_csv(self.hparams.data_dir).dropna())
-                if self.hparams.train_data_size is None
-                else JTSRDataset(
-                    pd.read_csv(self.hparams.data_dir).dropna()[: self.hparams.train_data_size]
-                )
+        self.full_dataset = (
+            JTSRDataset(pd.read_csv(self.hparams.data_dir).dropna())
+            if self.hparams.train_data_size is None
+            else JTSRDataset(
+                pd.read_csv(self.hparams.data_dir).dropna()[
+                    : self.hparams.train_data_size
+                ]
             )
+        )
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
@@ -105,14 +104,17 @@ class DataModule(LightningDataModule):
         so be careful if you do a random split!
         The `stage` can be used to differentiate whether it's called before
         trainer.fit()` or `trainer.test()`."""
-        if self.hparams.val_data_dir:
+        k_fold = KFold(n_splits=self.hparams.k_fold, shuffle=True)
+        data_train_ids, data_val_ids = list(
+            k_fold.split(self.full_dataset),
+        )[self.hparams.current_fold]
+        if self.hparams.k_fold == 0:
             self.data_train = JTSRDataset(pd.read_csv(self.hparams.data_dir).dropna())
             self.data_val = JTSRDataset(pd.read_csv(self.hparams.val_data_dir).dropna())
+        elif self.hparams.val_data_dir:
+            self.data_train = Subset(self.full_dataset, data_train_ids)
+            self.data_val = JTSRDataset(pd.read_csv(self.hparams.val_data_dir).dropna())
         else:
-            k_fold = KFold(n_splits=self.hparams.k_fold, shuffle=True)
-            data_train_ids, data_val_ids = list(
-                k_fold.split(self.full_dataset),
-            )[self.hparams.current_fold]
             self.data_train = Subset(self.full_dataset, data_train_ids)
             self.data_val = Subset(self.full_dataset, data_val_ids)
 
