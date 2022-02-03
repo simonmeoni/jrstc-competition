@@ -25,7 +25,7 @@ class JTSRDataset(Dataset):
     def __getitem__(self, index):
         more_toxic = self.more_toxic[index]
         less_toxic = self.less_toxic[index]
-        target = 1
+        target = -1
         if self.more_toxic_target is not None:
             more_toxic_target = self.more_toxic_target[index]
             less_toxic_target = self.less_toxic_target[index]
