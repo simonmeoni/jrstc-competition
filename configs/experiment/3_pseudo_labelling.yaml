@@ -20,7 +20,6 @@ defaults:
 
 # name of the run determines folder name in logs
 # it's also accessed by loggers
-name: Fold-${current_fold}
 seed: 12345
 transformer_model: "unitary/unbiased-toxic-roberta"
 architecture_model: "concat_regression"
@@ -45,6 +44,7 @@ datamodule:
   val_data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
   train_batch_size: 24
   val_batch_size: 64
+  k_fold: 0
 
 callbacks:
   rich_progress_bar:
