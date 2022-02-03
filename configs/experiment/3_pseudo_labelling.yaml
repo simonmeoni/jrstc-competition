@@ -21,14 +21,13 @@ defaults:
 # name of the run determines folder name in logs
 # it's also accessed by loggers
 name: Fold-${current_fold}
-current_fold: 0
 seed: 12345
 transformer_model: "unitary/unbiased-toxic-roberta"
 architecture_model: "concat_regression"
 experiment_group: "pseudo-labelling"
 
 trainer:
-  max_epochs: 5
+  max_epochs: 10
 
 model:
   lr: 5e-5
@@ -42,11 +41,10 @@ model:
   llrd: true
 
 datamodule:
-  data_dir: ${data_dir}/jigsaw-classification-voting-cleaning/validation_data.csv
+  data_dir: ${data_dir}/pseudo-jigsaw-severity/train.csv
   val_data_dir: ${data_dir}/jigsaw-toxic-severity-rating/validation_data.csv
   train_batch_size: 24
   val_batch_size: 64
-  k_fold: 5
 
 callbacks:
   rich_progress_bar:

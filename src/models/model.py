@@ -222,6 +222,12 @@ class Model(LightningModule):
                 "interval": "epoch",
                 "frequency": 1,
             }
+        elif self.hparams.scheduler == "LinearScheduleWithWarmup":
+            return {
+                "scheduler": ReduceLROnPlateau(optimizer, patience=self.hparams.patience),
+                "num_warmup_steps": 0,
+                "num_training_steps": 0
+            }
         return None
 
     def configure_optimizers(self):
