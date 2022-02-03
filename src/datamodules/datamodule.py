@@ -104,17 +104,21 @@ class DataModule(LightningDataModule):
         so be careful if you do a random split!
         The `stage` can be used to differentiate whether it's called before
         trainer.fit()` or `trainer.test()`."""
-        k_fold = KFold(n_splits=self.hparams.k_fold, shuffle=True)
-        data_train_ids, data_val_ids = list(
-            k_fold.split(self.full_dataset),
-        )[self.hparams.current_fold]
         if self.hparams.k_fold == 0:
             self.data_train = JTSRDataset(pd.read_csv(self.hparams.data_dir).dropna())
             self.data_val = JTSRDataset(pd.read_csv(self.hparams.val_data_dir).dropna())
         elif self.hparams.val_data_dir:
+            k_fold = KFold(n_splits=self.hparams.k_fold, shuffle=True)
+            data_train_ids, data_val_ids = list(
+                k_fold.split(self.full_dataset),
+            )[self.hparams.current_fold]
             self.data_train = Subset(self.full_dataset, data_train_ids)
             self.data_val = JTSRDataset(pd.read_csv(self.hparams.val_data_dir).dropna())
         else:
+            k_fold = KFold(n_splits=self.hparams.k_fold, shuffle=True)
+            data_train_ids, data_val_ids = list(
+                k_fold.split(self.full_dataset),
+            )[self.hparams.current_fold]
             self.data_train = Subset(self.full_dataset, data_train_ids)
             self.data_val = Subset(self.full_dataset, data_val_ids)
 
