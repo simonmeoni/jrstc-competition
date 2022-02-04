@@ -47,6 +47,7 @@ datamodule:
   train_batch_size: 24
   val_batch_size: 64
   k_fold: 5
+  current_fold: ${current_fold}
 
 callbacks:
   rich_progress_bar:
