@@ -13,6 +13,6 @@ def download(group, project, checkpoints_path):
             run = api.run(project + "/" + run.id)
             for artifact in run.logged_artifacts():
                 if artifact.type == "checkpoints":
-                    api.artifact(name=project + '/' + artifact.name, type='checkpoints')
-                    artifact.download(root=group_path + '/' + run.name)
+                    api.artifact(name=project + "/" + artifact.name, type="checkpoints")
+                    artifact.download(root=group_path + "/" + run.name)
     return checkpoints_path + "/" + normalized_group

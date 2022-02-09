@@ -1,7 +1,7 @@
-import pandas as pd
 import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from torch import nn
+import pandas as pd
 
 
 class TFIDFRegression(nn.Module):

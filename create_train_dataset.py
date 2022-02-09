@@ -7,14 +7,16 @@ import pandas as pd
 import torch
 from sentence_transformers import SentenceTransformer, util
 from torch import nn
-from tqdm import tqdm
 
-from bin.chunks import chunks
-from bin.concat_regression import ConcatRegression
+from bin.inference.chunks import chunks
+from bin.transformers.concat_regression import ConcatRegression
 from bin.file_utils import rm_and_new_folder
-from bin.seed_everything import seed_everything
-from bin.upload_to_kaggle import kaggle_new_dataset_version, kaggle_get_metadata
-from bin.wandb_download_chekpoints import download
+from bin.random.seed_everything import seed_everything
+from bin.checkpoints.upload_to_kaggle import (
+    kaggle_new_dataset_version,
+    kaggle_get_metadata,
+)
+from bin.checkpoints.wandb_download_chekpoints import download
 
 
 class Model(nn.Module):
@@ -61,15 +63,18 @@ def get_corpora(min_len=21, max_len=5000):
             ]["comment_text"].dropna()
         ),
         "toxic_task_path": list(
-            toxic_task[toxic_task["text"].str.len().between(min_len, max_len)]["text"].dropna()
+            toxic_task[toxic_task["text"].str.len().between(min_len, max_len)][
+                "text"
+            ].dropna()
         )[:300000],
     }
     jigsaw_severity = pd.read_csv(
         "data/jigsaw-classification-voting-cleaning/validation_data.csv"
     )
-    return jigsaw_severity, [
-        example for corpus in list(corpora.values()) for example in corpus
-    ]
+    return (
+        jigsaw_severity,
+        [example for corpus in list(corpora.values()) for example in corpus],
+    )
 
 
 def load_models(config):
@@ -172,12 +177,16 @@ def generate_dataset():
     less_toxic_comment = val_corpus["less_toxic"]
     more_toxic_comment = val_corpus["more_toxic"]
 
-    less_examples = flat_excerpt(select_examples(
-        less_toxic_comment, train_corpora_vectors, train_corpora, sentence_model
-    ))
-    more_examples = flat_excerpt(select_examples(
-        more_toxic_comment, train_corpora_vectors, train_corpora, sentence_model
-    ))
+    less_examples = flat_excerpt(
+        select_examples(
+            less_toxic_comment, train_corpora_vectors, train_corpora, sentence_model
+        )
+    )
+    more_examples = flat_excerpt(
+        select_examples(
+            more_toxic_comment, train_corpora_vectors, train_corpora, sentence_model
+        )
+    )
 
     less_target = predict(
         checkpoints_path, ranking_model, less_examples, device=config["device"]

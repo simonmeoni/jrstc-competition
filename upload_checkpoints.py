@@ -1,8 +1,10 @@
 import argparse
 
-from bin.file_utils import rm_and_new_folder
-from bin.upload_to_kaggle import kaggle_get_metadata, kaggle_new_dataset_version
-from bin.wandb_download_chekpoints import download
+from bin.checkpoints.upload_to_kaggle import (
+    kaggle_get_metadata,
+    kaggle_new_dataset_version,
+)
+from bin.checkpoints.wandb_download_chekpoints import download
 
 
 def main(checkpoints_path, kaggle_dataset, project, wandb_groups):

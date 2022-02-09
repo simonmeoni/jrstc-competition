@@ -1,11 +1,10 @@
-import pandas as pd
 import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from torch import nn
-from transformers import AutoModel, AutoTokenizer
+import pandas as pd
+from transformers import AutoTokenizer
 
-from src.models.architectures.mlp import MLP
-from src.utils.utils import rm_dropout
+from bin.transformers.hugginface_rm_dropout import rm_dropout
 
 
 class TFIDFDense(nn.Module):
@@ -70,7 +69,14 @@ class TransformerDense(nn.Module):
 
 class TFIDFTransformer(nn.Module):
     def __init__(
-        self, num_classes, tf_idf_data, model, tokenizer, max_length, hidden_size, remove_dropout
+        self,
+        num_classes,
+        tf_idf_data,
+        model,
+        tokenizer,
+        max_length,
+        hidden_size,
+        remove_dropout,
     ):
         super().__init__()
         self.tfidf_dense = TFIDFDense(tf_idf_data=tf_idf_data)

@@ -1,18 +1,28 @@
 import torch
 from torch import nn
-from transformers import AutoConfig, AutoModel, AutoTokenizer
+from transformers import AutoTokenizer
 
-from src.models.architectures.mlp import MLP
-from src.utils.utils import rm_dropout
+from bin.transformers.hugginface_rm_dropout import rm_dropout
+from bin.transformers.huggingface_freeze_layer import freeze_layer
 
 
-class ConcatMLP(nn.Module):
-    def __init__(self, model, hidden_size, num_classes, tokenizer, max_length, remove_dropout):
+class ConcatRegression(nn.Module):
+    def __init__(
+        self,
+        model,
+        hidden_size,
+        num_classes,
+        tokenizer,
+        max_length,
+        remove_dropout,
+        freeze,
+    ):
         super().__init__()
         self.model = rm_dropout(model, remove_dropout)
+        self.model = freeze_layer(model, freeze)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         self.drop = nn.Dropout(p=0.2)
-        self.fc = MLP(hidden_size * 4, num_classes)
+        self.fc = nn.Linear(hidden_size * 4, num_classes)
         self.max_length = max_length
 
     def forward(self, text, device):

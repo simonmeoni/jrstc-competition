@@ -1,13 +1,15 @@
 import torch
 from torch import nn
-from transformers import AutoConfig, AutoModel, AutoTokenizer
+from transformers import AutoTokenizer
 
-from src.models.architectures.mlp import MLP
-from src.utils.utils import rm_dropout
+from bin.transformers.hugginface_rm_dropout import rm_dropout
+from bin.transformers.mlp import MLP
 
 
 class ConcatMLP(nn.Module):
-    def __init__(self, model, hidden_size, num_classes, tokenizer, max_length, remove_dropout):
+    def __init__(
+        self, model, hidden_size, num_classes, tokenizer, max_length, remove_dropout
+    ):
         super().__init__()
         self.model = rm_dropout(model, remove_dropout)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)

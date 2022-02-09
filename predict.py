@@ -6,14 +6,14 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer
 
-from bin.concat_mlp import ConcatMLP
-from bin.concat_regression import ConcatRegression
-from bin.set_seed import set_seed
-from bin.simple_regression import SimpleRegression
-from bin.stacking_inference import inference
-from bin.tfidf_mlp import TFIDFMLP
-from bin.tfidf_regression import TFIDFRegression
-from bin.tfidf_transformer import TFIDFTransformer
+from bin.transformers.concat_mlp import ConcatMLP
+from bin.transformers.concat_regression import ConcatRegression
+from bin.random.set_seed import set_seed
+from bin.transformers.simple_regression import SimpleRegression
+from bin.inference.stacking_inference import inference
+from bin.transformers.tfidf_mlp import TFIDFMLP
+from bin.transformers.tfidf_regression import TFIDFRegression
+from bin.transformers.tfidf_transformer import TFIDFTransformer
 
 
 class JigsawDataset(Dataset):

@@ -5,16 +5,17 @@ from torch import nn
 from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
 from transformers import AdamW
 
-from bin.tfidf_mlp import TFIDFMLP
-from bin.tfidf_regression import TFIDFRegression
-from bin.tfidf_transformer import TFIDFTransformer
-from src.models.architectures.concat_mlp import ConcatMLP
-from src.models.architectures.concat_regression import ConcatRegression
-from src.models.architectures.simple_mlp import SimpleMLP
-from src.models.architectures.simple_regression import SimpleRegression
+from bin.transformers.huggingface_llrd import layerwise_learning_rate_decay
+from bin.transformers.tfidf_mlp import TFIDFMLP
+from bin.transformers.tfidf_regression import TFIDFRegression
+from bin.transformers.tfidf_transformer import TFIDFTransformer
+from bin.transformers.concat_mlp import ConcatMLP
+from bin.transformers.concat_regression import ConcatRegression
+from bin.transformers.simple_mlp import SimpleMLP
+from bin.transformers.simple_regression import SimpleRegression
 from src.models.losses.aux_loss import AuxLoss
 from src.models.losses.margin_loss import MarginLoss
-from src.utils.utils import Accuracy, layerwise_learning_rate_decay
+from src.utils.utils import Accuracy
 
 
 class MLP(nn.Module):
